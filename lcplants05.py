@@ -16,7 +16,7 @@ taxondict = tree()
 
 
 def readcsv():
-    with open('usdasearch.txt') as csvfile:
+    with open('USDAsearch.txt') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
         rows = list(reader)
     return rows
