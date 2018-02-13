@@ -1,14 +1,22 @@
 import csv
 import json
-import pprint
+import pprint as pp
+from collections import defaultdict
 
-pp = pprint.PrettyPrinter(depth=2);
+taxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
 
+
+
+
+def tree(): 
+	return defaultdict(tree)
+
+taxondict = tree()	
 
 
 
 def readcsv():
-    with open('usdasearch02.txt') as csvfile:
+    with open('usdasearch.txt') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
         rows = list(reader)
     return rows
