@@ -27,19 +27,27 @@ def taxons():
         else:
             species = plant['Species']
 
-        category = plant['Category']
+        if plant.get('Category') is None:
+            pass
+        else:
+            category = plant['Category']
 
         taxondefdict[kingdom][order][pclass][family][genus] = species
 
     return taxondefdict
+
+
+
 
 def dicts(t): return {k: dicts(t[k]) for k in t}
 # theoretically this will convert the magical defaultdict back into a proper dict
 #pp.pprint(dicts(taxons()))
 
 
+
+
 def readcsv():
-      with open('USDAsearch.txt') as csvfile:
+      with open('USDAsearch.txt', encoding = 'utf-8', errors = 'ignore') as csvfile:
           reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
           return [x for x in reader]
 
@@ -101,14 +109,16 @@ def writekumu(): # repackaging the dict so it can be visualized in kumu (this is
         json.dump(kumu, outfile, sort_keys=True, indent=4)
 
 
-plants = cleandict()
+
 
 def writejson():
-    with open('plantsdict.json', 'w') as outfile:
+    with open('plantdict.json', 'w') as outfile:
         json.dump(plants, outfile, sort_keys=True, indent=4)
 
+
+
 def readjson():
-    with open ('plantsdict.json', 'r', encoding='utf8') as jsonfile:
+    with open ('taxondict.json', 'r', encoding='utf8') as jsonfile:
         return (json.load(jsonfile))
 
 def cleandict():
@@ -136,7 +146,7 @@ def cleandict():
 
 def writekumu(): # repackaging the dict so it can be visualized in kumu
     elements = []
-    for plant in cleandict():
+    for plant in taxons():
         sciname = plant['Scientific Name']
         try:
             plant['Common Name']
@@ -160,5 +170,4 @@ def writekumu(): # repackaging the dict so it can be visualized in kumu
         json.dump(kumu, outfile, sort_keys=True, indent=4)
 
 
-plants = cleandict()
-writejson()
+writekumu()
