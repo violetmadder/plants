@@ -134,3 +134,5 @@ def writetaxonkumu(): # repackaging the dict so it can be visualized in kumu, ve
     with open ('plantskumu.json', 'w') as outfile:
         json.dump(kumu, outfile, sort_keys=True, indent=4)
 
+plants = cleandict()
+writejson()
