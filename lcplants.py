@@ -4,7 +4,7 @@ import pprint as pp
 from collections import defaultdict
 
 
-#taxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
+taxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
 
 
 
@@ -14,26 +14,16 @@ def tree(): # trying out this magical defaultdict trick
 
 def taxons():
     taxondefdict = tree()
-    for plant in cleandict():
-        if plant.get('Kingdom') is None: # I need a cleaner way to handle these
-            continue
-        else:
-            kingdom = plant['Kingdom']
-        order = plant['Order']
-        pclass = plant['Class']
-        family = plant['Family']
-        genus = plant['Genus']
-        if plant.get('Species') is None:
-            continue
-        else:
-            species = plant['Species']
+    for plant in readcsv():
+        for taxon in taxonlist:
+            if plant.get(taxon) is None:
+                print (plant['Scientific Name'] + ' is missing '+ taxon)
+                continue
+            else:
+                taxonname = taxon
+                taxondefdict[taxonname] = plant[taxon]
 
-        if plant.get('Category') is None:
-            pass
-        else:
-            category = plant['Category']
-
-        taxondefdict[kingdom][order][pclass][family][genus][species]
+        #taxondefdict[kingdom][order][pclass][family][genus][species]
 
     return taxondefdict
 
@@ -62,7 +52,7 @@ def readjson():
     with open ('plantsdict.json', 'r', encoding='utf8') as jsonfile:
         return (json.load(jsonfile))
 
-def cleandict():
+def cleandict(): #isn't working correctly, it's ripping species out of the scientific names and possibly other mistakes
     filteredItems = []
     plantnum = 0
     for item in readcsv():
@@ -134,5 +124,7 @@ def writetaxonkumu(): # repackaging the dict so it can be visualized in kumu, ve
     with open ('plantskumu.json', 'w') as outfile:
         json.dump(kumu, outfile, sort_keys=True, indent=4)
 
-plants = cleandict()
+#pp.pprint(taxons())
+
+plants = readcsv()
 writejson()
