@@ -1,8 +1,11 @@
 import csv
+import io
 import json
 import pprint as pp
+import sys
 from collections import defaultdict
 
+csv.field_size_limit(500 * 1024 * 1024)
 
 taxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
 
@@ -32,24 +35,18 @@ def dicts(t): return {k: dicts(t[k]) for k in t}
 #pp.pprint(dicts(taxons()))
 
 
-
-
-def readcsv(): #runs, but utf-16 characters come through this one as /u00 code
-      with open('USDAsearch.txt', encoding = 'utf-8', errors = 'ignore') as csvfile:
-          reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-          return [x for x in reader]
       
-def ioreadcsv(): #trips "Error: field larger than field limit (131072)"
-      with io.open('USDAsearch.txt', 'r', encoding = 'utf-16-le') as csvfile:
-          reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-          return [x for x in reader]
+def readcsv():
+    with io.open('USDAsearch.txt', 'r', encoding = 'utf-16-le') as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
+        return [x for x in reader]
 
 def writejson():
-    with open('plantsdict.json', 'w') as outfile:
+    with io.open('plantsdict.json', 'w') as outfile:
         json.dump(plants, outfile, sort_keys=True, indent=4)
 
 def readjson():
-    with open ('plantsdict.json', 'r', encoding='utf8') as jsonfile:
+    with io.open('plantsdict.json', 'r') as jsonfile:
         return (json.load(jsonfile))
 
 def cleandict(): #isn't working correctly, it's ripping species out of the scientific names and possibly other mistakes
