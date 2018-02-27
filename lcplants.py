@@ -1,58 +1,122 @@
 import csv
-import io
 import json
 import pprint as pp
-import sys
-from collections import defaultdict
-
-csv.field_size_limit(500 * 1024 * 1024)
-
-taxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
 
 
 
 
-def tree(): # trying out this magical defaultdict trick
-    return defaultdict(tree)
+maintaxonlist = ['Kingdom', 'Division', 'Class', 'Order', 'Family', 'Genus', 'Species']
+fulltaxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
+subtaxonlist = ['Subkingdom', 'Superdivision', 'Subdivision', 'Subclass', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma' ] #these are nonessential and not every plant will have them
 
-def taxons():
-    taxondefdict = tree()
-    for plant in readcsv():
-        for taxon in taxonlist:
-            if plant.get(taxon) is None:
-                print (plant['Scientific Name'] + ' is missing '+ taxon)
-                continue
-            else:
-                taxonname = taxon
-                taxondefdict[taxonname] = plant[taxon]
+def taxondict():
+    print ("taxondict() is running")
+    taxondict = {}
+    for plant in readjson():
+        if plant.get('Kingdom') == 'Plantae':
+            if plant.get('Species'):
+                for counter, taxon in enumerate(maintaxonlist):
+                    if counter > 0:
+                        parenttaxon = maintaxonlist[counter - 1]
+                        parentname = plant.get(maintaxonlist[counter - 1])
+                    if taxon == 'Species':
+                        _id = plant.get('Accepted Symbol')
+                        if plant.get('Common Name'):
+                            label = plant.get('Common Name')
+                        else:
+                            label = plant.get('Scientific Name')
+                        taxondict[label] = {
+                        'label': label,
+                        'type': taxon,
+                        '_id' : _id,
+                        taxon : plant.get(taxon), #current taxon
+                        parenttaxon : parentname #parent taxon
+                        }
+                    elif counter == 0:
+                        label = plant.get(taxon)
+                        taxondict[label] = {
+                            'label': label,
+                            'type': taxon,
+                            }
+                    else:
+                        label = plant.get(taxon)
+                        taxondict[label] = {
+                            'label': label,
+                            'type': taxon,
+                            taxon : plant.get(taxon), #current taxon
+                            parenttaxon : parentname #parent taxon
+                            }
+    return taxondict
 
-        #taxondefdict[kingdom][order][pclass][family][genus][species]
-
-    return taxondefdict
-
-def dicts(t): return {k: dicts(t[k]) for k in t}
-# theoretically this will convert the magical defaultdict back into a proper dict
-#pp.pprint(dicts(taxons()))
 
 
-      
-def readcsv():
-    with io.open('USDAsearch.txt', 'r', encoding = 'utf-16-le') as csvfile:
+
+def checktype(dictionary):                       #this needs adjustment, it's missing stuff where species names have weird characters
+    for plant in dictionary:
+        sciname = plant.get('Scientific Name')
+        scinamelist = sciname.split(' ')
+        if plant.get('Species'):
+            if len(scinamelist) == 2:
+               if scinamelist[0][0].isupper():
+                   if scinamelist[1][0].islower():
+                       plant['type'] = 'Species'
+            elif len(scinamelist) == 4:
+                if scinamelist[2]== 'ssp.':
+                    plant['type'] = 'Subpsecies'
+                elif scinamelist[-2]== 'var.':
+                    plant['type'] = 'Cultivar'
+        elif not plant.get('Species'): #if the entry is missing a species name....
+            if len(scinamelist) == 2:
+                if scinamelist[0][0].isupper():
+                    if scinamelist[1][0].islower(): #...but the scientific name has the format of a species...
+                        plant['Species'] = scinamelist[1] #...fill in the species name from the full scientific name.
+                        plant['type'] = 'Species'
+            elif len(scinamelist) == 1: #if the scientific name is one word, this is probably a taxon and not a species
+                    for counter, taxon in enumerate(maintaxonlist):
+                        if not plant.get(taxon):
+                            plant['type'] = maintaxonlist[counter-1] #find the first taxon field missing, step back one and set that as the type
+                            #this will need more work to include subtaxons
+        else:
+            plant['type'] = ''
+    return dictionary
+
+
+
+def readcsv(filename): #runs, but utf-16 characters come through as /u00 code. Will throw "Error: line contains NULL byte" if the file was saved as UTF-16
+    print ("readcsv("+filename+") is running")
+    with open(filename, 'r', errors = 'ignore') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
         return [x for x in reader]
+      
+def writejson(dictionary, filename):
+    print ("writejson("+filename+") is running")
+    with open(filename, 'w') as outfile:
+        json.dump(dictionary, outfile, sort_keys=True, indent=4)
 
-def writejson():
-    with io.open('plantsdict.json', 'w') as outfile:
-        json.dump(plants, outfile, sort_keys=True, indent=4)
-
-def readjson():
-    with io.open('plantsdict.json', 'r') as jsonfile:
+def readjson(filename):
+    print ("readjson("+filename+") is running")
+    with open(filename, 'r') as jsonfile:
         return (json.load(jsonfile))
 
-def cleandict(): #isn't working correctly, it's ripping species out of the scientific names and possibly other mistakes
+def writekumu(dictionary):
+    print ("writekumu() is running")
+    elements = []
+
+    for plant in dictionary():
+        elements.append(dictionary[plant])
+               
+    kumu = {'elements': elements, 'connections': []}
+    with open ('plantskumu.json', 'w') as outfile:
+        json.dump(taxonkumu(), outfile, sort_keys=True, indent=4, default=lambda x: None) #Warning: I used that default thing to hide an error
+
+
+
+
+def cleandict(dictionary): #remove empty values for easier viewing
+    print ("cleandict() is running")
     filteredItems = []
     plantnum = 0
-    for item in readcsv():
+    for item in dictionary:
         plantnum = plantnum + 1
         filteredItem = {}
         for k, v in item.items(): #cleaning off keys with empty values
@@ -64,64 +128,26 @@ def cleandict(): #isn't working correctly, it's ripping species out of the scien
     return filteredItems
     # the above was based upon this: {k: [item for item in v if item] for k, v in readcsv())
 
-#def focusdict(): #trim down the big library into a smaller, more focused thing
-#    for item in cleandict():
-#        if item['Category'] == 'Lichen': #ignoring lichens
-#            continue
-#        else:
-#            focusdict.append(item)
-#    return focusdict
+def focusdict(dictionary): #trim down the big database into a smaller, more focused chunk
+    focusdict = []
+    desiredtypes = ['Kingdom', 'Division', 'Class', 'Order', 'Family', 'Genus']
+    for plant in dictionary:
+        if plant.get('type') not in desiredtypes:
+            continue
+        else:
+            focusdict.append(plant)
+    return focusdict
 
-def writekumu(): # repackaging the dict so it can be visualized in kumu (this is vestigial)
-    elements = []
-    for plant in cleandict():
-        sciname = plant['Scientific Name']
-        try:
-            plant['Common Name']
-            label = plant['Common Name']
-        except:
-            label =  sciname
-        elements.append({
-                'label': label,
-                '_id': plant['Symbol'],
-                'type' : 'species',
-                'description': '',
-                'tags': '',
-                'genus': plant['Genus'],
-                #'species': plant['Species'],
-                'scientific name': sciname,
-                #'common name': plant['Common Name'],
-                'zone' : '',
-                })
-    kumu = {'elements': elements, 'connections': []}
-    with open ('plantskumu.json', 'w') as outfile:
-        json.dump(kumu, outfile, sort_keys=True, indent=4)
-
-
-def writetaxonkumu(): # repackaging the dict so it can be visualized in kumu, vestigial
-    elements = []
-    for kingdom in taxons():
-        elements.append({
-                'label': kingdom,
-                'type' : 'kingdom',
-                'description': '',
-                'tags': '',
-                })
-        for division in taxons[kingdom]:
-            elements.append({
-                    'label': division,
-                    'type': 'division',
-                    })
-            for pclass in taxons[kingdom][pclass]:
-                elements.append({
-                        'label': pclass,
-                        'type': 'class',
-                        })
-    kumu = {'elements': elements, 'connections': []}
-    with open ('plantskumu.json', 'w') as outfile:
-        json.dump(kumu, outfile, sort_keys=True, indent=4)
-
-#pp.pprint(taxons())
-
-plants = readcsv()
-writejson()
+def comparedicts(): #just getting started with this
+    searchplants = readcsv('USDAsearch.txt') 
+    checkedplants = readjson('checkeddict.json')
+    oldplants = []
+    newplants = []
+    newlist = []
+    for oldplant in masterplants:
+        oldplants.append(oldplant.get('Symbol'))
+    for newplant in searchplants:
+        if newplant.get('Symbol') not in oldplants:
+            newlist.append(newplant)
+    return newlist
+            
