@@ -1,13 +1,15 @@
 import csv
 import json
 import pprint as pp
-
+import re
 
 
 
 maintaxonlist = ['Kingdom', 'Division', 'Class', 'Order', 'Family', 'Genus', 'Species']
 fulltaxonlist = ['Kingdom', 'Subkingdom', 'Superdivision', 'Division', 'Subdivision', 'Class', 'Subclass', 'Order', 'Family', 'Genus', 'Species', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma']
 subtaxonlist = ['Subkingdom', 'Superdivision', 'Subdivision', 'Subclass', 'Subspecies', 'Variety', 'Subvariety', 'Cultivar', 'Forma' ] #these are nonessential and not every plant will have them
+categories = ['Dicot', 'Gymnosperm', 'Moss', 'Monocot', None, 'Lichen', 'Liverwort', 'Fern', 'Hornwort', 'Green alga', 'Horsetail', 'RA', 'Lycopod', 'Quillwort', 'Whisk-fern']
+
 
 def taxondict():
     print ("taxondict() is running")
@@ -52,6 +54,7 @@ def taxondict():
 
 
 def checktype(dictionary):                       #this needs adjustment, it's missing stuff where species names have weird characters
+    print ('checktype() is running')
     for plant in dictionary:
         sciname = plant.get('Scientific Name')
         scinamelist = sciname.split(' ')
@@ -75,7 +78,7 @@ def checktype(dictionary):                       #this needs adjustment, it's mi
                     for counter, taxon in enumerate(maintaxonlist):
                         if not plant.get(taxon):
                             plant['type'] = maintaxonlist[counter-1] #find the first taxon field missing, step back one and set that as the type
-                            #this will need more work to include subtaxons
+                            #this will need more work to include subtaxoa
         else:
             plant['type'] = ''
     return dictionary
@@ -102,13 +105,19 @@ def writekumu(dictionary):
     print ("writekumu() is running")
     elements = []
 
-    for plant in dictionary():
+    for plant in dictionary:
+        dictionary[plant]['_id'] = dictionary[plant].get('Accepted Symbol')
+        if dictionary[plant].get('Common Name'):
+            dictionary[plant]['label'] = dictionary[plant].get('Common Name')
         elements.append(dictionary[plant])
                
     kumu = {'elements': elements, 'connections': []}
     with open ('plantskumu.json', 'w') as outfile:
-        json.dump(taxonkumu(), outfile, sort_keys=True, indent=4, default=lambda x: None) #Warning: I used that default thing to hide an error
+        json.dump(kumu, outfile, sort_keys=True, indent=4, default=lambda x: None) #Warning: I used that default thing to hide an error
 
+def readkumu():
+    plants = readjson('plantskumu.json')
+    return plants['elements']
 
 
 
@@ -119,7 +128,7 @@ def cleandict(dictionary): #remove empty values for easier viewing
     for item in dictionary:
         plantnum = plantnum + 1
         filteredItem = {}
-        for k, v in item.items(): #cleaning off keys with empty values
+        for k, v in item.items(): 
             if v:
                 filteredItem[k] = v
         if filteredItem:
@@ -138,6 +147,27 @@ def focusdict(dictionary): #trim down the big database into a smaller, more focu
             focusdict.append(plant)
     return focusdict
 
+def focus2(dictionary): #gets rid of the gooey stuff and anything but straight up species
+    focusdict = {}
+    undesiredcats = ['Lichen', 'RA', 'Green alga']
+    for plant in dictionary:
+        if dictionary[plant].get('type') != 'Species':
+            continue
+        elif dictionary[plant].get('Category') in undesiredcats:
+            continue
+        elif dictionary[plant].get('Growth Habit') == 'Lichenous':
+            continue
+        else:
+            focusdict[plant] = dictionary[plant]
+    return focusdict
+
+def focus3(dictionary):
+    focusdict = {}
+    for plant in dictionary:
+        if dictionary[plant].get('Palatable Human') == 'Yes':
+            focusdict[plant] = dictionary[plant]
+    return focusdict
+                     
 def comparedicts(): #just getting started with this
     searchplants = readcsv('USDAsearch.txt') 
     checkedplants = readjson('checkeddict.json')
@@ -151,3 +181,101 @@ def comparedicts(): #just getting started with this
             newlist.append(newplant)
     return newlist
             
+
+def countplants(dictionary):
+    plantnum = 0
+    for plant in dictionary:
+        plantnum = plantnum + 1
+    print (plantnum)
+
+
+
+
+
+
+kingdoms =  ['Plantae', 'Fungi']
+
+def taxa():
+    taxondict = { 'Plantae': {}}
+    plants = readjson('plantsdict.json')
+    for plant in plants:
+        if plants[plant].get('Kingdom') == 'Plantae':
+            division = plants[plant].get('Division')
+            taxondict['Plantae'][division] = {'boo'}
+    return taxondict
+
+#pp.pprint(taxa())
+
+
+
+
+
+
+
+
+
+
+
+plants = readcsv('USDAsearch.txt')
+divisions = []
+for plant in plants:
+    division = plant.get('Division')
+    if division not in divisions:
+        divisions.append(division)
+
+print(divisions)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def freshgo():
+    plants = readcsv('USDAsearch.txt')
+    plantdict = {}
+    for plant in plants:
+        sciname = plant.get('Scientific Name')
+        sciname = re.sub('Ã—', '', sciname) #kill the weird characters plz??
+        scinamesplit = sciname.split(' ')
+        symbol = plant.get('Accepted Symbol')
+        tags = []
+        coname = plant.get('Common Name')
+        if coname:
+            label = coname
+        else:
+            label = sciname
+        if len(scinamesplit) == 2:
+            if plant.get('Hybrid Species Indicator') is not '':
+                ptype = 'hybrid'
+            elif plant.get('Hybrid Species Indicator') == '':
+                ptype = 'species'
+            if plant.get('Palatable Human') == 'Yes':
+                tags.append('edible')
+            if plant.get('Nitrogen Fixation') == 'High':
+                tags.append('Nfixer')
+            if scinamesplit[0][0].isupper():
+                if scinamesplit[1][0].islower():
+                    key = sciname + ' ' + symbol
+                    plantdict[key] = {'_id': symbol,
+                             'label' : label,
+                             'type' : ptype,
+                             'species' : plant.get('Species'),
+                             'genus' : plant.get('Genus'),
+                             'family' : plant.get('Family'),
+                             'tags' : tags,
+                             'order' : plant.get('Order'),
+                             'class' : plant.get('Class'),
+                             'division' : plant.get('Division'),
+                             'kingdom' : plant.get('Kingdom')
+                             }
+    writejson(plantdict, 'plantsdict.json')
+    
