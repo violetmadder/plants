@@ -1,0 +1,97 @@
+@settings {
+  template: custom;
+  cluster: species by "genus" as "Genus", genus by "family" as "Family", family by "order" as "Order", order by "class" as "Class", class by "division" as "Division", division by "kingdom" as "Kingdom";
+  theme: dark;
+  quality: fast;
+  font-size: 30;
+  connection-color: #484848;
+  element-color: #868686;
+  include: species, element, connection, loop;
+}
+
+element["element type"="species"] {
+  size: 7;
+  font-size: 7;
+}
+
+element["element type"="genus"] {
+  size: 10;
+  font-size: 10;
+}
+
+element["element type"="family"] {
+  size: 30;
+  font-size: 30;
+}
+
+element["element type"="order"] {
+  size: 40;
+  font-size: 40;
+}
+
+element["element type"="class"] {
+  size: 55;
+  font-size: 55;
+}
+
+element["element type"="division"] {
+  size: 70;
+  font-size: 70;
+}
+
+element["element type"="kingdom"] {
+  size: 100;
+  font-size: 100;
+}
+
+connection["connection type"="kingdom"] {
+  size: 50;
+}
+
+connection["connection type"="division"] {
+  size: 35;
+}
+
+connection["connection type"="class"] {
+  size: 25;
+}
+
+connection["connection type"="order"] {
+  size: 20;
+}
+
+connection["connection type"="family"] {
+  size: 15;
+}
+
+connection["connection type"="genus"] {
+  size: 5;
+}
+
+connection["connection type"="species"] {
+  size: 3;
+}
+
+/* elements: bad "genu" instead of "genus" */
+["Element Type"="genu"] {
+  color: #0000ff;
+}
+
+/* elements: bad "clas" instead of "class" */
+["Element Type"="clas"] {
+  color: #dc131e;
+}
+
+/* connections:  */
+["Connection Type"="clas"] {
+  color: #dc131e;
+  size: 6;
+  style: dashed;
+}
+
+connection["connection type"="genu"] {
+  color: #0000ff;
+  size: 6;
+  style: dashed;
+}
+
