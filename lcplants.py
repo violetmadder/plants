@@ -13,8 +13,11 @@ subtaxonlist = ['SubKingdom', 'Superdivision', 'SubDivision', 'SubClass', 'Subsp
 categories = ['Dicot', 'Gymnosperm', 'Moss', 'Monocot', None, 'Lichen', 'Liverwort', 'Fern', 'Hornwort', 'Green alga', 'Horsetail', 'RA', 'Lycopod', 'Quillwort', 'Whisk-fern']
 growhabits = []
 
+#==============================================================================
+#
+#==============================================================================
 
-def planttags(plant):
+def USDAtags(plant):
     tags = []
     if plant.get('Palatable Human') == 'Yes':
         tags.append('edible')
@@ -27,14 +30,17 @@ def planttags(plant):
     if plant.get('Drought Tolerance' == 'High'):
         tags.append('droughttolerant')
     if plant.get('Duration'):
-        tags.append(plant.get('Duration'))
+        if plant.get('Duration') == "AN":
+            tags.append('Annual')
+        else:
+            tags.append(plant.get('Duration'))
     if plant.get('Category'):
         tags.append(plant.get('Category'))
     return tags
 
 
-        
 
+#change this one to work on individual plants at a time
 def checktype(dictionary): #this needs adjustment, it's missing stuff where species names have weird characters
     print ('checktype() is running')
     for plant in dictionary:
@@ -70,142 +76,151 @@ def taxondict(): # this needs to be broken up more cleanly
     taxondict = {}
     elements = []
     plants = readcsv('USDAsearch.txt')
+    
+    pepperwood = readjson('pepperwoodlist.json')
+
     for counter, plant in enumerate(plants):
-        kingdom = plant.get('Kingdom')
-        division = plant.get('Division')
-        pclass = plant.get('Class')
-        order = plant.get('Order')
-        family = plant.get('Family')
-        genus = plant.get('Genus')
-        species = plant.get('Species')
         sciname = plant.get('Scientific Name')
-        coname = plant.get('Common Name')
-        if coname:
-            label = coname
+        if sciname not in pepperwood['indb']:
+            continue
         else:
-            label = sciname
-        symbol = plant.get('Accepted Symbol')
-        fasymbol = plant.get('Family Symbol')
-        faconame = plant.get('Family Common Name')
-        habit = plant.get('Growth Habit')
-        habit = habit.split(',')
-        scinamesplit = sciname.split(' ')
-        if len(scinamesplit) == 2:
-            if kingdom == 'Fungi':
-                continue
-            if not counter % 19 == 0:  #randomly trims down the results so kumu can handle it
-                continue
+            kingdom = plant.get('Kingdom')
+            division = plant.get('Division')
+            pclass = plant.get('Class')
+            order = plant.get('Order')
+            family = plant.get('Family')
+            genus = plant.get('Genus')
+            species = plant.get('Species')
+            coname = plant.get('Common Name')
+            if coname:
+                label = coname
             else:
-                try:
-                    taxondict[kingdom][division][pclass][order][family][genus][sciname]
+                label = sciname
+            symbol = plant.get('Accepted Symbol')
+            fasymbol = plant.get('Family Symbol')
+            faconame = plant.get('Family Common Name')
+            habit = plant.get('Growth Habit')
+            habit = habit.split(',')
+            scinamesplit = sciname.split(' ')
+            if len(scinamesplit) == 2:
+                if kingdom == 'Fungi':
                     continue
-                except:
-                    pass
-                if taxondict.get(kingdom) == None:
-                    taxondict[kingdom] = {
-                             'label': kingdom,
-                             'type': 'Kingdom',
-                            'description':''
-                             }
-                    elements.append({
-                             'label': kingdom,
-                             'kingdom': kingdom,
-                             'type': 'Kingdom',
-                            'description':''
-                             })
-                if taxondict[kingdom].get(division) == None:
-                    taxondict[kingdom][division] = {
-                             'label': division,
-                             'type': 'Division',
-                            'description':''}
-                    elements.append({
-                             'label': division,
-                             'kingdom': kingdom,
-                             'division': division,
-                             'type': 'Division',
-                            'description':''
-                             })
-                if taxondict[kingdom][division].get(pclass) == None:
-                    taxondict[kingdom][division][pclass] = {
-                            'label': pclass,
-                            'type': 'Class',
-                            'description':''}
-                    elements.append({
-                             'label': pclass,
-                             'division': division,
-                             'class': pclass,
-                             'type': 'Class',
-                            'description':''
-                             })
-                if taxondict[kingdom][division][pclass].get(order) == None:
-                    taxondict[kingdom][division][pclass][order] = {
-                            'label': order,
-                            'type': 'Order',
-                            'description':''}
-                    elements.append({
-                             'label': order,
-                             'class': pclass,
-                             'order': order,
-                             'type': 'Order',
-                             'description':''
-                             })
-                if taxondict[kingdom][division][pclass][order].get(family) == None:
-                    taxondict[kingdom][division][pclass][order][family] = {
-                            '_id': fasymbol,
-                            'order': order,
-                            'label': family,
-                            'type': 'Family',
-                            'description':''}
-                    elements.append({
-                             '_id': fasymbol,
-                             'label': family,
-                             'family': family,
-                             'order': order,
-                             'type': 'Family',
-                             'description':''
-                             })
-                if taxondict[kingdom][division][pclass][order][family].get(genus) == None:
-                    taxondict[kingdom][division][pclass][order][family][genus] = {
-                            'fasymbol': fasymbol,
-                            'label': genus,
-                            'type': 'Genus',
-                            'description':''}
-                    elements.append({
-                             'label': genus,
-                             'family': family,
-                             'genus': genus,
-                             'type': 'Genus',
-                            'description':''
-                             })
+                #if not counter % 19 == 0:  #randomly trims down the results so kumu can handle it
+                    #continue
                 else:
-                    tags = planttags(plant)                    
-                    taxondict[kingdom][division][pclass][order][family][genus][sciname] = {
-                            '_id': symbol,
-                            'fasymbol': fasymbol,
-                            'label': label,
-                            'sciname': sciname,
-                            'coname': coname,
-                            'genus': genus,
-                            'habit': habit,
-                            'type': 'Species',
-                            'tags': tags,
-                            'description':''
-                            }
-                    elements.append({
-                             '_id': symbol,
-                             'label': label,
-                             'fasymbol': fasymbol,
-                             'coname': coname,
-                             'genus': genus,
-                             'habit': habit,
-                             'type': 'Species',
-                             'tags': tags,
-                             'description':''
-                             })
+                    try:
+                        taxondict[kingdom][division][pclass][order][family][genus][sciname]
+                        continue
+                    except:
+                        pass
+                    if taxondict.get(kingdom) == None:
+                        taxondict[kingdom] = {
+                                 'label': kingdom,
+                                 'type': 'Kingdom',
+                                'description':''
+                                 }
+                        elements.append({
+                                 'label': kingdom,
+                                 'kingdom': kingdom,
+                                 'type': 'Kingdom',
+                                'description':''
+                                 })
+                    if taxondict[kingdom].get(division) == None:
+                        taxondict[kingdom][division] = {
+                                 'label': division,
+                                 'type': 'Division',
+                                'description':''}
+                        elements.append({
+                                 'label': division,
+                                 'kingdom': kingdom,
+                                 'division': division,
+                                 'type': 'Division',
+                                'description':''
+                                 })
+                    if taxondict[kingdom][division].get(pclass) == None:
+                        taxondict[kingdom][division][pclass] = {
+                                'label': pclass,
+                                'type': 'Class',
+                                'description':''}
+                        elements.append({
+                                 'label': pclass,
+                                 'division': division,
+                                 'class': pclass,
+                                 'type': 'Classs',
+                                'description':''
+                                 })
+                    if taxondict[kingdom][division][pclass].get(order) == None:
+                        taxondict[kingdom][division][pclass][order] = {
+                                'label': order,
+                                'type': 'Order',
+                                'description':''}
+                        elements.append({
+                                 'label': order,
+                                 'class': pclass,
+                                 'order': order,
+                                 'type': 'Order',
+                                 'description':''
+                                 })
+                    if taxondict[kingdom][division][pclass][order].get(family) == None:
+                        taxondict[kingdom][division][pclass][order][family] = {
+                                '_id': fasymbol,
+                                'order': order,
+                                'label': family,
+                                'type': 'Family',
+                                'description':''}
+                        elements.append({
+                                 '_id': fasymbol,
+                                 'label': family,
+                                 'family': family,
+                                 'order': order,
+                                 'type': 'Family',
+                                 'description':''
+                                 })
+                    if taxondict[kingdom][division][pclass][order][family].get(genus) == None:
+                        taxondict[kingdom][division][pclass][order][family][genus] = {
+                                'fasymbol': fasymbol,
+                                'label': genus,
+                                'type': 'Genus',
+                                'description':''}
+                        elements.append({
+                                 'label': genus,
+                                 'family': family,
+                                 'genus': genus,
+                                 'type': 'Genus',
+                                'description':''
+                                 })
+                    else:
+                        tags = planttags(plant)                    
+                        taxondict[kingdom][division][pclass][order][family][genus][sciname] = {
+                                '_id': symbol,
+                                'fasymbol': fasymbol,
+                                'label': label,
+                                'sciname': sciname,
+                                'coname': coname,
+                                'genus': genus,
+                                'habit': habit,
+                                'type': 'Species',
+                                'tags': tags,
+                                'description':''
+                                }
+                        elements.append({
+                                 '_id': symbol,
+                                 'label': label,
+                                 'fasymbol': fasymbol,
+                                 'coname': coname,
+                                 'sciname': sciname,
+                                 'genus': genus,
+                                 'habit': habit,
+                                 'type': 'Species',
+                                 'tags': tags,
+                                 'description':''
+                                 })
                 
     return elements
 
-
+#==============================================================================
+# reading and writing files
+#==============================================================================
 def readfile(filename):
     print('readfile() is running')
     readfile = open(filename, 'r')
@@ -251,16 +266,9 @@ def writekumu2(elements):
     with open ('plantskumu.json', 'w') as outfile:
         json.dump(kumu, outfile, sort_keys=True, indent=4, default=lambda x: None) 
 
-
-
-
-
-
-
-
-
-
-
+#==============================================================================
+#
+#==============================================================================
 
 def cleandict(dictionary): #remove empty values for easier viewing
     print ("cleandict() is running")
@@ -342,7 +350,7 @@ def count(things):
 
 
 
-plants = taxondict()
+#plants = taxondict()
 #writekumu2(plants)
 
 
@@ -387,7 +395,8 @@ def USDAcharacteristics(): #for checking against the USDA plant characteristics 
 
 
 
-def freshtest():
+def plantdict():
+    print ('plantdict() is running')
     plants = readcsv('USDAsearch.txt')
     plantdict = {}
     for plant in plants:
@@ -395,7 +404,7 @@ def freshtest():
         sciname = re.sub('Ã—', '', sciname) #kill the weird characters plz??
         scinamesplit = sciname.split(' ')
         symbol = plant.get('Accepted Symbol')
-        tags = []
+        tags = USDAtags(plant)
         coname = plant.get('Common Name')
         if coname:
             label = coname
@@ -406,15 +415,12 @@ def freshtest():
                 ptype = 'hybrid'
             elif plant.get('Hybrid Species Indicator') == '':
                 ptype = 'species'
-            if plant.get('Palatable Human') == 'Yes':
-                tags.append('edible')
-            if plant.get('Nitrogen Fixation') == 'High':
-                tags.append('Nfixer')
             if scinamesplit[0][0].isupper():
                 if scinamesplit[1][0].islower():
-                    key = sciname + ' ' + symbol
+                    key = sciname# + ' ' + symbol
                     plantdict[key] = {'_id': symbol,
                              'label' : label,
+                             'sciname': sciname,
                              'type' : ptype,
                              'species' : plant.get('Species'),
                              'genus' : plant.get('Genus'),
@@ -427,25 +433,42 @@ def freshtest():
                              }
     writejson(plantdict, 'plantsdict.json')
 
-
+#plantdict()
 
 
 
 def findspecies(text):
+    genera = readjson('genera.json')
     plantsfound = []
+    notspecies = ['sp','spp', 'seeds', 'to', 'was', 'thistles', 'specimens']
     for line in text:
+        line = line.replace('\n','')
+        line = line.replace('*', '')
+        line = line.replace('â€\xa0', '')
+        line = line.replace('.', '')
+        line = line.replace('12','')
+        line = line.replace(',', '')
         line = line.split(' ')
         capitalword = ''
         lowerword = ''
         if len(line) > 2:
             for counter, word in enumerate(line):
-                if word is not line[-1]:
-                    if word[0].isupper():
-                        wordcapital = word
-                        if line[counter+1][0].islower():
-                            wordlower = line[counter+1]
-                            maybeplant = wordcapital + ' ' + wordlower
-                            plantsfound.append(maybeplant)
+                if word:
+                    if word is not line[-1]:
+                        if word[0].isupper():
+                            if word in genera:
+                                if line[counter+1][0].islower():
+                                    if line[counter+1] is 'x':
+                                        if line[counter+2]:
+                                            nextword = line[counter+2]
+                                        else:
+                                            continue
+                                    elif line[counter+1] in notspecies:
+                                        continue
+                                    else:
+                                        nextword = line[counter+1]
+                                        maybeplant = word + ' ' + nextword
+                                        plantsfound.append(maybeplant)
     return set(plantsfound)
 
 def isitgenus(word):
@@ -454,31 +477,34 @@ def isitgenus(word):
     else:
         return False
 
+def listscinames():
+    plants = readcsv('USDAsearch.txt')
+    stuff = whatkinds(plants, 'Scientific Name')
+    writejson(stuff, 'scinames.json')
 
-plants = readcsv('USDAsearch.txt')
-stuff = whatkinds(plants, 'Scientific Name')
-writejson(stuff, 'scinames.json')
+def pepperwoodlist():  
+    pepperwood = readfile('pepperwood.txt')     
+    foundinpepperwood = (findspecies(pepperwood))
+    foundplants = []
+    generalist = readjson('genera.json')
+    scinamelist = readjson('scinames.json')
+    for maybeplant in foundinpepperwood:
+        if maybeplant.split(' ')[0] in generalist:
+            foundplants.append(maybeplant)
+    plants =  readcsv('USDAsearch.txt')
+    notindb = []
+    indb = []
+    for plant in foundplants:
+        if plant not in scinamelist:
+            notindb.append(plant)
+        else:
+            indb.append(plant)
+    plants = {'notindb' : notindb,
+              'indb' : indb}
+    writejson(plants, 'pepperwoodlist.json')
 
     
-pepperwood = readfile('pepperwood.txt')     
-foundinpepperwood = (findspecies(pepperwood))
-foundplants = []
-generalist = readjson('genera.json')
-scinamelist = readjson('scinames.json')
-for maybeplant in foundinpepperwood:
-    if maybeplant.split(' ')[0] in generalist:
-        foundplants.append(maybeplant)
-plants =  readcsv('USDAsearch.txt')
-notindb = []
-indb = []
-for plant in foundplants:
-    if plant not in scinamelist:
-        notindb.append(plant)
-    else:
-        indb.append(plant)
-print ('found in database:', indb, 'not found in database:', notindb)
-    
-    
-    
-    
+pepperwoodlist()
+writekumu2(taxondict())
+##This produces a taxon tree in json for kumu-- BUT, a lot of the species are being left off. Every branch should end in a species, but many stump off at genus. Must figure that out.
     
