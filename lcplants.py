@@ -3,7 +3,9 @@ import json
 import pprint as pp
 import re
 
-
+#==============================================================================
+#USDA PLANTS database-specific stuff
+#==============================================================================
 USDAfieldnames = ["Accepted Symbol","Synonym Symbol","Symbol","Scientific Name","Hybrid Genus Indicator","Genus","Hybrid Species Indicator","Species","Subspecies Prefix","Hybrid Subspecies Indicator","Subspecies","Variety Prefix","Hybrid Variety Indicator","Variety","Subvariety Prefix","Subvariety","Forma Prefix","Forma","Genera/Binomial Author","Trinomial Author","Quadranomial Author","Questionable Taxon Indicator","Parents","Common Name","State and Province","Category","Genus","Family","Family Symbol","Family Common Name","Order","SubClass","Class","SubDivision","Division","SuperDivision","SubKingdom","Kingdom","Duration","Growth Habit","Native Status","Federal Noxious Status","State Noxious Status","Invasive","Federal T/E Status","State T/E Status","State T/E Common Name","National Wetland Indicator Status","Regional Wetland Indicator Status","Cultivar Name","Active Growth Period","After Harvest Regrowth Rate","Bloat","C:N Ratio","Coppice Potential","Fall Conspicuous","Fire Resistance","Flower Color","Flower Conspicuous","Foliage Color","Foliage Porosity Summer","Foliage Porosity Winter","Foliage Texture","Fruit Color","Fruit Conspicuous","Growth Form","Growth Rate","Height at Base Age, Maximum (feet)","Height, Mature (feet)","Known Allelopath","Leaf Retention","Lifespan","Low Growing Grass","Nitrogen Fixation","Resprout Ability","Shape and Orientation","Toxicity","Adapted to Coarse Textured Soils","Adapted to Medium Textured Soils","Adapted to Fine Textured Soils","Anaerobic Tolerance","CaCO<SUB>3</SUB> Tolerance","Cold Stratification Required","Drought Tolerance","Fertility Requirement","Fire Tolerance","Frost Free Days, Minimum","Hedge Tolerance","Moisture Use","pH (Minimum)","pH (Maximum)","Planting Density per Acre, Minimum","Planting Density per Acre, Maximum","Precipitation (Minimum)","Precipitation (Maximum)","Root Depth, Minimum (inches)","Salinity Tolerance","Shade Tolerance","Temperature, Minimum (°F)","Bloom Period","Commercial Availability","Fruit/Seed Abundance","Fruit/Seed Period Begin","Fruit/Seed Period End","Fruit/Seed Persistence","Propogated by Bare Root","Propogated by Bulbs","Propogated by Container","Propogated by Corms","Propogated by Cuttings","Propogated by Seed","Propogated by Sod","Propogated by Sprigs","Propogated by Tubers","Seeds per Pound","Seed Spread Rate","Seedling Vigor","Small Grain","Vegetative Spread Rate","Berry/Nut/Seed Product","Christmas Tree Product","Fodder Product","Fuelwood Product","Lumber Product","Naval Store Product","Nursery Stock Product","Palatable Browse Animal","Palatable Graze Animal","Palatable Human","Post Product","Protein Potential","Pulpwood Product","Veneer Product"]
 #I'm sure I'm missing a few, getting a full version is tricky
 maintaxonlist = ['Kingdom', 'Division', 'Class', 'Order', 'Family', 'Genus', 'Species']
@@ -13,9 +15,7 @@ subtaxonlist = ['SubKingdom', 'Superdivision', 'SubDivision', 'SubClass', 'Subsp
 categories = ['Dicot', 'Gymnosperm', 'Moss', 'Monocot', None, 'Lichen', 'Liverwort', 'Fern', 'Hornwort', 'Green alga', 'Horsetail', 'RA', 'Lycopod', 'Quillwort', 'Whisk-fern']
 growhabits = []
 
-#==============================================================================
-#
-#==============================================================================
+
 
 def USDAtags(plant):
     tags = []
@@ -218,6 +218,57 @@ def taxondict(): # this needs to be broken up more cleanly
                 
     return elements
 
+def plantdict(): #this makes a flat dictionary of plant species, using scientific names as keys
+    print ('plantdict() is running')
+    plants = readcsv('USDAsearch.txt')
+    plantdict = {}
+    for plant in plants:
+        sciname = plant.get('Scientific Name')
+        sciname = re.sub('Ã—', '', sciname) #kill the weird characters plz??
+        scinamesplit = sciname.split(' ')
+        symbol = plant.get('Accepted Symbol')
+        tags = USDAtags(plant)
+        coname = plant.get('Common Name')
+        if coname:
+            label = coname
+        else:
+            label = sciname
+        if len(scinamesplit) == 2:
+            if plant.get('Hybrid Species Indicator') is not '':
+                ptype = 'hybrid'
+            elif plant.get('Hybrid Species Indicator') == '':
+                ptype = 'species'
+            if scinamesplit[0][0].isupper():
+                if scinamesplit[1][0].islower():
+                    key = sciname# + ' ' + symbol
+                    plantdict[key] = {'_id': symbol,
+                             'label' : label,
+                             'sciname': sciname,
+                             'type' : ptype,
+                             'species' : plant.get('Species'),
+                             'genus' : plant.get('Genus'),
+                             'family' : plant.get('Family'),
+                             'tags' : tags,
+                             'order' : plant.get('Order'),
+                             'class' : plant.get('Class'),
+                             'division' : plant.get('Division'),
+                             'kingdom' : plant.get('Kingdom')
+                             }
+    writejson(plantdict, 'plantsdict.json')
+
+def listscinames():
+    plants = readcsv('USDAsearch.txt')
+    stuff = whatkinds(plants, 'Scientific Name')
+    writejson(stuff, 'scinames.json')
+#==============================================================================
+#misc little tools
+#==============================================================================
+def count(things):
+    num = 0
+    for thing in things:
+        num = num + 1
+    print ('count() counted' + str(num) + 'things')
+
 #==============================================================================
 # reading and writing files
 #==============================================================================
@@ -264,10 +315,10 @@ def writekumu2(elements):
     print ("writekumu2() is running")      
     kumu = {'elements': elements, 'connections': []}
     with open ('plantskumu.json', 'w') as outfile:
-        json.dump(kumu, outfile, sort_keys=True, indent=4, default=lambda x: None) 
+        json.dump(kumu, outfile, sort_keys=True, indent=4, default=lambda x: None)
 
 #==============================================================================
-#
+#selecting and modifying more specific batches of content from the database
 #==============================================================================
 
 def cleandict(dictionary): #remove empty values for easier viewing
@@ -316,7 +367,9 @@ def focus3(dictionary):
         if dictionary[plant].get('Palatable Human') == 'Yes':
             focusdict[plant] = dictionary[plant]
     return focusdict
-                     
+#==============================================================================
+#checking batches of plants against each other
+#==============================================================================                 
 def comparedicts(): #just getting started with this
     searchplants = readcsv('USDAsearch.txt') 
     checkedplants = readjson('checkeddict.json')
@@ -331,30 +384,10 @@ def comparedicts(): #just getting started with this
     return newlist
             
 
-def count(things):
-    num = 0
-    for thing in things:
-        num = num + 1
-    print ('count() counted' + str(num) + 'things')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#plants = taxondict()
-#writekumu2(plants)
-
-
-
+#==============================================================================
+# asking the plant database questions
+#==============================================================================
 
 def whatkinds(plants, fieldname):
     print ('whatkinds() is running')
@@ -392,49 +425,19 @@ def USDAcharacteristics(): #for checking against the USDA plant characteristics 
 #stuff = whatkinds(plants, 'Genus')
 #writejson(stuff, 'genera.json')
 
+def isitgenus(word):
+    if word in readfile('genera.json'):
+        return True
+    else:
+        return False
 
 
 
-def plantdict():
-    print ('plantdict() is running')
-    plants = readcsv('USDAsearch.txt')
-    plantdict = {}
-    for plant in plants:
-        sciname = plant.get('Scientific Name')
-        sciname = re.sub('Ã—', '', sciname) #kill the weird characters plz??
-        scinamesplit = sciname.split(' ')
-        symbol = plant.get('Accepted Symbol')
-        tags = USDAtags(plant)
-        coname = plant.get('Common Name')
-        if coname:
-            label = coname
-        else:
-            label = sciname
-        if len(scinamesplit) == 2:
-            if plant.get('Hybrid Species Indicator') is not '':
-                ptype = 'hybrid'
-            elif plant.get('Hybrid Species Indicator') == '':
-                ptype = 'species'
-            if scinamesplit[0][0].isupper():
-                if scinamesplit[1][0].islower():
-                    key = sciname# + ' ' + symbol
-                    plantdict[key] = {'_id': symbol,
-                             'label' : label,
-                             'sciname': sciname,
-                             'type' : ptype,
-                             'species' : plant.get('Species'),
-                             'genus' : plant.get('Genus'),
-                             'family' : plant.get('Family'),
-                             'tags' : tags,
-                             'order' : plant.get('Order'),
-                             'class' : plant.get('Class'),
-                             'division' : plant.get('Division'),
-                             'kingdom' : plant.get('Kingdom')
-                             }
-    writejson(plantdict, 'plantsdict.json')
 
-#plantdict()
 
+#==============================================================================
+# parsing text looking for plant information
+#==============================================================================
 
 
 def findspecies(text):
@@ -471,16 +474,9 @@ def findspecies(text):
                                         plantsfound.append(maybeplant)
     return set(plantsfound)
 
-def isitgenus(word):
-    if word in readfile('genera.json'):
-        return True
-    else:
-        return False
 
-def listscinames():
-    plants = readcsv('USDAsearch.txt')
-    stuff = whatkinds(plants, 'Scientific Name')
-    writejson(stuff, 'scinames.json')
+
+
 
 def pepperwoodlist():  
     pepperwood = readfile('pepperwood.txt')     
@@ -504,7 +500,7 @@ def pepperwoodlist():
     writejson(plants, 'pepperwoodlist.json')
 
     
-pepperwoodlist()
-writekumu2(taxondict())
+#pepperwoodlist()
+#writekumu2(taxondict())
 ##This produces a taxon tree in json for kumu-- BUT, a lot of the species are being left off. Every branch should end in a species, but many stump off at genus. Must figure that out.
     
