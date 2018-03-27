@@ -3,9 +3,43 @@ import json
 import pprint as pp
 import re
 
-#==============================================================================
+
+
+
+
+
+    
+
+
+
+
+
+
+#==========================================================================================
+#gonna try using classes soon
+#==========================================================================================
+class Plant(object):  #species, subspecies, cultivar, forma
+    
+    
+    def __init__(self, sciname, _id, description):
+
+        sciname = ''
+        _id = ''
+        description = ''
+
+
+
+
+
+
+
+
+
+
+
+#==========================================================================================
 #USDA PLANTS database-specific stuff
-#==============================================================================
+#==========================================================================================
 USDAfieldnames = ["Accepted Symbol","Synonym Symbol","Symbol","Scientific Name","Hybrid Genus Indicator","Genus","Hybrid Species Indicator","Species","Subspecies Prefix","Hybrid Subspecies Indicator","Subspecies","Variety Prefix","Hybrid Variety Indicator","Variety","Subvariety Prefix","Subvariety","Forma Prefix","Forma","Genera/Binomial Author","Trinomial Author","Quadranomial Author","Questionable Taxon Indicator","Parents","Common Name","State and Province","Category","Genus","Family","Family Symbol","Family Common Name","Order","SubClass","Class","SubDivision","Division","SuperDivision","SubKingdom","Kingdom","Duration","Growth Habit","Native Status","Federal Noxious Status","State Noxious Status","Invasive","Federal T/E Status","State T/E Status","State T/E Common Name","National Wetland Indicator Status","Regional Wetland Indicator Status","Cultivar Name","Active Growth Period","After Harvest Regrowth Rate","Bloat","C:N Ratio","Coppice Potential","Fall Conspicuous","Fire Resistance","Flower Color","Flower Conspicuous","Foliage Color","Foliage Porosity Summer","Foliage Porosity Winter","Foliage Texture","Fruit Color","Fruit Conspicuous","Growth Form","Growth Rate","Height at Base Age, Maximum (feet)","Height, Mature (feet)","Known Allelopath","Leaf Retention","Lifespan","Low Growing Grass","Nitrogen Fixation","Resprout Ability","Shape and Orientation","Toxicity","Adapted to Coarse Textured Soils","Adapted to Medium Textured Soils","Adapted to Fine Textured Soils","Anaerobic Tolerance","CaCO<SUB>3</SUB> Tolerance","Cold Stratification Required","Drought Tolerance","Fertility Requirement","Fire Tolerance","Frost Free Days, Minimum","Hedge Tolerance","Moisture Use","pH (Minimum)","pH (Maximum)","Planting Density per Acre, Minimum","Planting Density per Acre, Maximum","Precipitation (Minimum)","Precipitation (Maximum)","Root Depth, Minimum (inches)","Salinity Tolerance","Shade Tolerance","Temperature, Minimum (°F)","Bloom Period","Commercial Availability","Fruit/Seed Abundance","Fruit/Seed Period Begin","Fruit/Seed Period End","Fruit/Seed Persistence","Propogated by Bare Root","Propogated by Bulbs","Propogated by Container","Propogated by Corms","Propogated by Cuttings","Propogated by Seed","Propogated by Sod","Propogated by Sprigs","Propogated by Tubers","Seeds per Pound","Seed Spread Rate","Seedling Vigor","Small Grain","Vegetative Spread Rate","Berry/Nut/Seed Product","Christmas Tree Product","Fodder Product","Fuelwood Product","Lumber Product","Naval Store Product","Nursery Stock Product","Palatable Browse Animal","Palatable Graze Animal","Palatable Human","Post Product","Protein Potential","Pulpwood Product","Veneer Product"]
 #I'm sure I'm missing a few, getting a full version is tricky
 maintaxonlist = ['Kingdom', 'Division', 'Class', 'Order', 'Family', 'Genus', 'Species']
@@ -14,8 +48,6 @@ subtaxonlist = ['SubKingdom', 'Superdivision', 'SubDivision', 'SubClass', 'Subsp
 #the USDA versions of these ^^ have odd mid-word capitalizations
 categories = ['Dicot', 'Gymnosperm', 'Moss', 'Monocot', None, 'Lichen', 'Liverwort', 'Fern', 'Hornwort', 'Green alga', 'Horsetail', 'RA', 'Lycopod', 'Quillwort', 'Whisk-fern']
 growhabits = []
-
-
 
 def USDAtags(plant):
     tags = []
@@ -444,7 +476,18 @@ def findspecies(text):
     genera = readjson('genera.json')
     plantsfound = []
     notspecies = ['sp','spp', 'seeds', 'to', 'was', 'thistles', 'specimens']
+    communities = ['Douglas-fir Forest', 'Redwood Forest', 'Mixed Hardwood Forest', 'Oak Woodland', 'Riparian Woodland', 'Mixed Chaparral', 'Serpentine Chapparral', 'Grassland', 'Rock Outcrops', 'Springs', 'Marshes', 'Ponds', 'Vernal Pools', 'Disturbed Areas', 'Homesteads']
+    community = None
+      
+
     for line in text:
+        line = line.strip()
+        if line in communities:
+            community = line
+            continue
+        if line == 'Rare Plants':
+            community = 'communityend'
+        plantsfound.append(community)
         line = line.replace('\n','')
         line = line.replace('*', '')
         line = line.replace('â€\xa0', '')
@@ -479,7 +522,9 @@ def findspecies(text):
 
 
 def pepperwoodlist():  
-    pepperwood = readfile('pepperwood.txt')     
+    pepperwood = readfile('pepperwood.txt')
+    communities = ['Douglas-fir Forest', 'Redwood Forest', 'Mixed Hardwood Forest', 'Oak Woodland', 'Riparian Woodland', 'Mixed Chaparral', 'Serpentine Chapparral', 'Grassland', 'Rock Outcrops', 'Springs', 'Marshes', 'Ponds', 'Vernal Pools', 'Disturbed Areas', 'Homesteads']
+
     foundinpepperwood = (findspecies(pepperwood))
     foundplants = []
     generalist = readjson('genera.json')
@@ -491,6 +536,9 @@ def pepperwoodlist():
     notindb = []
     indb = []
     for plant in foundplants:
+        if plant in communities:
+            community = plant
+            continue
         if plant not in scinamelist:
             notindb.append(plant)
         else:
@@ -500,7 +548,40 @@ def pepperwoodlist():
     writejson(plants, 'pepperwoodlist.json')
 
     
-#pepperwoodlist()
+
 #writekumu2(taxondict())
 ##This produces a taxon tree in json for kumu-- BUT, a lot of the species are being left off. Every branch should end in a species, but many stump off at genus. Must figure that out.
-    
+
+pepperwoodlist()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
